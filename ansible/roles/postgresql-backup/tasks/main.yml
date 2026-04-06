@@ -1,0 +1,69 @@
+---
+- name: Установка AWS CLI (для работы с S3)
+  pip:
+    name: awscli
+    state: present
+  become: yes
+
+- name: Создание директории .aws для пользователя
+  file:
+    path: /home/{{ ansible_user }}/.aws
+    state: directory
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '0700'
+  become: yes
+
+- name: Настройка AWS CLI для Yandex Object Storage
+  template:
+    src: aws_config.j2
+    dest: /home/{{ ansible_user }}/.aws/config
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '0600'
+
+- name: Настройка учетных данных AWS
+  template:
+    src: aws_credentials.j2
+    dest: /home/{{ ansible_user }}/.aws/credentials
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '0600'
+
+- name: Создание бэкап скрипта
+  template:
+    src: backup.sh.j2
+    dest: /usr/local/bin/backup_mediawiki_db.sh
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Создание локальной директории для временного хранения бэкапов
+  file:
+    path: /var/backups/mediawiki
+    state: directory
+    owner: postgres
+    group: postgres
+    mode: '0750'
+
+- name: Добавляем cron задачу на ежедневный бэкап БД
+  cron:
+    name: "MediaWiki PostgreSQL daily backup"
+    minute: "0"
+    hour: "2"
+    job: "/usr/local/bin/backup_mediawiki_db.sh >> /var/log/mediawiki_backup.log 2>&1"
+    user: root
+
+- name: Настройка логирования для бэкапов
+  copy:
+    dest: /etc/logrotate.d/mediawiki-backup
+    content: |
+      /var/log/mediawiki_backup.log {
+          daily
+          rotate 7
+          compress
+          delaycompress
+          missingok
+          notifempty
+          create 0640 root root
+      }

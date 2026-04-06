@@ -1,0 +1,40 @@
+#!/bin/bash
+# Резервное копирование базы данных MediaWiki в Yandex Object Storage
+
+# Настройки
+BACKUP_DIR="/var/backups/mediawiki"
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+DB_NAME="{{ db_name }}"
+DB_USER="{{ db_user }}"
+DB_PASSWORD="{{ db_password }}"
+BUCKET="{{ s3_backups_bucket_name }}"
+S3_ENDPOINT="https://storage.yandexcloud.net"
+
+# Создаём дамп сжатый gzip
+export PGPASSWORD="$DB_PASSWORD"
+pg_dump -U "$DB_USER" -h localhost "$DB_NAME" | gzip > "$BACKUP_DIR/${DB_NAME}_${TIMESTAMP}.sql.gz"
+
+if [ $? -eq 0 ]; then
+    echo "$(date): Backup created successfully"
+
+    # Загружаем в S3
+    aws s3 --endpoint-url "$S3_ENDPOINT" \
+        cp "$BACKUP_DIR/${DB_NAME}_${TIMESTAMP}.sql.gz" \
+        "s3://$BUCKET/db-dump/${DB_NAME}_${TIMESTAMP}.sql.gz"
+
+    if [ $? -eq 0 ]; then
+        echo "$(date): Upload to S3 successful"
+
+        # Удаляем локальный дамп старше 7 дней
+        find "$BACKUP_DIR" -name "*.sql.gz" -type f -mtime +7 -delete
+    else
+        echo "$(date): Upload to S3 FAILED"
+        exit 1
+    fi
+else
+    echo "$(date): Backup creation FAILED"
+    exit 1
+fi
+
+# Очистка старых объектов в бакете (настроено lifecycle rule, но можно и вручную)
+# aws s3 --endpoint-url "$S3_ENDPOINT" rm "s3://$BUCKET/db-dump/" --recursive --exclude "*" --include "*$(date --date='30 days ago' +%Y%m%d)*"

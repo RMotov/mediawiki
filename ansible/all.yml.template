@@ -1,0 +1,33 @@
+# Общие переменные для всех хостов.
+
+# Системные
+admin_user: ubuntu
+timezone: Europe/Moscow
+
+# PostgreSQL общие
+postgresql_version: 14
+db_host: {{ db_host }}
+db_name: mediawiki
+db_user: wikiuser
+db_password: "{{ db_password }}"
+replication_user: replicator
+replication_password: "{{ replication_password }}"
+
+# MediaWiki
+mw_version: "1.45.0"
+mw_install_dir: /var/www/mediawiki
+mw_admin_user: "WikiAdmin"
+mw_admin_password: "AdminPass123"
+mw_admin_email: "wikiadmin@yandex.ru"
+mw_site_name: "Корпоративная Вики"
+
+# S3 (Object Storage)
+s3_access_key: "{{ s3_access_key }}"
+s3_secret_key: "{{ s3_secret_key }}"
+s3_bucket_name: "{{ s3_bucket_name }}"
+s3_backups_bucket_name: "{{ s3_backups_bucket_name }}"
+s3_endpoint: "https://storage.yandexcloud.net"
+s3_region: "ru-central1"
+
+# Zabbix
+zabbix_db_password: "ZabbixPass123"

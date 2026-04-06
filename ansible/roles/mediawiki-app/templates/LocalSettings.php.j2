@@ -1,0 +1,69 @@
+<?php
+# Этот файл генерируется Ansible
+$wgSecretKey = "{{ lookup('password', '/dev/null length=64 chars=ascii_letters,digits') }}";
+$wgUpgradeKey = "{{ lookup('password', '/dev/null length=16 chars=ascii_letters,digits') }}";
+
+# Настройки базы данных
+$wgDBtype = "postgres";
+$wgDBserver = "{{ db_host }}";
+$wgDBname = "{{ db_name }}";
+$wgDBuser = "{{ db_user }}";
+$wgDBpassword = "{{ db_password }}";
+
+# Пути
+$wgScriptPath = "";
+$wgArticlePath = "/wiki/$1";
+$wgUsePathInfo = true;
+
+# Загрузка файлов через S3 (Yandex Object Storage)
+wfLoadExtension( 'AWS' );
+$wgAWSCredentials = [
+    'key' => '{{ s3_access_key }}',
+    'secret' => '{{ s3_secret_key }}',
+    'useInstanceProfile' => false,
+];
+$wgAWSRegion = '{{ s3_region }}';
+$wgAWSBucketName = '{{ s3_bucket_name }}';
+$wgAWSRepoHashLevels = 3;
+$wgAWSRepoDeletedHashLevels = 3;
+$wgAWSBucketTopSubdirectory = '/';
+$wgAWSPlugin->setEndpoint( '{{ s3_endpoint }}' );
+
+# Включение стандартных расширений
+wfLoadExtension( 'Cite' );
+wfLoadExtension( 'Gadgets' );
+wfLoadExtension( 'ImageMap' );
+wfLoadExtension( 'InputBox' );
+wfLoadExtension( 'Interwiki' );
+wfLoadExtension( 'LocalisationUpdate' );
+wfLoadExtension( 'Nuke' );
+wfLoadExtension( 'ParserFunctions' );
+wfLoadExtension( 'PdfHandler' );
+wfLoadExtension( 'Poem' );
+wfLoadExtension( 'RSS' );
+wfLoadExtension( 'Renameuser' );
+wfLoadExtension( 'SpamBlacklist' );
+wfLoadExtension( 'SyntaxHighlight_GeSHi' );
+wfLoadExtension( 'TitleBlacklist' );
+wfLoadExtension( 'WikiEditor' );
+
+# Кэширование
+$wgMainCacheType = CACHE_NONE;
+$wgMessageCacheType = CACHE_NONE;
+$wgParserCacheType = CACHE_NONE;
+
+# Логирование
+$wgDebugLogFile = "/var/log/mediawiki/debug.log";
+$wgDBerrorLog = "/var/log/mediawiki/dberror.log";
+
+# Внешний вид
+$wgDefaultSkin = "vector";
+
+# Права (только для авторизованных)
+$wgGroupPermissions['*']['createaccount'] = false;
+$wgGroupPermissions['*']['edit'] = false;
+$wgGroupPermissions['user']['edit'] = true;
+$wgGroupPermissions['user']['upload'] = true;
+
+# Завершение
+require_once "$IP/LocalSettings_local.php";

@@ -1,0 +1,42 @@
+---
+- name: Настройка всех серверов (общие задачи)
+  hosts: all
+  become: yes
+  roles:
+    - common
+
+- name: Настройка PostgreSQL мастера
+  hosts: database_master
+  become: yes
+  roles:
+    - postgresql-master
+
+- name: Настройка PostgreSQL реплики
+  hosts: database_replica
+  become: yes
+  roles:
+    - postgresql-replica
+
+- name: Настройка резервного копирования БД (на мастере)
+  hosts: database_master
+  become: yes
+  roles:
+    - postgresql-backup
+
+- name: Настройка приложений MediaWiki
+  hosts: app_servers
+  become: yes
+  roles:
+    - mediawiki-app
+
+- name: Настройка балансировщика Nginx
+  hosts: load_balancers
+  become: yes
+  roles:
+    - nginx-lb
+
+- name: Настройка Zabbix сервера (на балансировщике)
+  hosts: monitoring
+  become: yes
+  roles:
+    - zabbix-server

@@ -1,0 +1,23 @@
+---
+- name: Обновление apt кэша
+  apt:
+    update_cache: yes
+    cache_valid_time: 3600
+
+- name: Установка системных пакетов
+  apt:
+    name:
+      - curl
+      - wget
+      - htop
+      - python3
+      - python3-pip
+      - acl
+      - rsync
+      - unzip
+      - git
+    state: present
+
+- name: Установка таймзоны Europe/Moscow
+  timezone:
+    name: "{{ timezone | default('Europe/Moscow') }}"

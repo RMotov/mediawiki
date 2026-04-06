@@ -1,0 +1,81 @@
+---
+- name: Установка PostgreSQL
+  apt:
+    name: "postgresql-{{ postgresql_version }}"
+    state: present
+    update_cache: yes
+  register: apt_result
+  until: apt_result is success
+  retries: 10
+  delay: 10
+
+- name: Установка системной библиотеки psycopg2 для работы Ansible с Postgres
+  apt:
+    name: python3-psycopg2
+    state: present
+    update_cache: yes
+
+- name: Проверка статуса PostgreSQL
+  systemd:
+    name: postgresql
+    state: started
+    enabled: yes
+
+- name: Настройка postgresql.conf для репликации
+  lineinfile:
+    path: /etc/postgresql/{{ postgresql_version }}/main/postgresql.conf
+    regexp: "^#?{{ item.key }} ="
+    line: "{{ item.key }} = {{ item.value }}"
+  loop:
+    - { key: "listen_addresses", value: "'*'" }
+    - { key: "wal_level", value: "replica" }
+    - { key: "max_wal_senders", value: "5" }
+    - { key: "wal_keep_size", value: "1GB" }
+    - { key: "hot_standby", value: "on" }
+  notify: restart postgresql
+
+- name: Настройка pg_hba.conf для репликации
+  blockinfile:
+    path: /etc/postgresql/{{ postgresql_version }}/main/pg_hba.conf
+    block: |
+      # Разрешить доступ для репликации
+      host replication {{ replication_user }} {{ hostvars['db_replica']['internal_ip'] }}/32 md5
+      # Разрешить доступ Zabbix серверу к PostgreSQL
+      host zabbix zabbix {{ hostvars['zbx_server']['internal_ip'] }}/32 md5
+      # Доступ
+      host {{ db_name }} {{ db_user }} 10.10.0.0/24 md5
+    insertafter: EOF
+  notify: restart postgresql
+
+#- name: Применить изменения конфигурации немедленно
+#  meta: flush_handlers
+
+- name: Создаем пользователя для репликации
+  become_user: postgres
+  postgresql_user:
+    name: "{{ replication_user }}"
+    password: "{{ replication_password }}"
+    role_attr_flags: REPLICATION,LOGIN
+    db: postgres
+
+- name: Создаем БД
+  become_user: postgres
+  postgresql_db:
+    name: "{{ db_name }}"
+  register: db_created
+
+- name: Создаем пользователя БД
+  become_user: postgres
+  postgresql_user:
+    name: "{{ db_user }}"
+    password: "{{ db_password }}"
+    db: "{{ db_name }}"
+    priv: ALL
+  notify: restart postgresql
+
+- name: Проверка на наличие слота репликации
+  become_user: postgres
+  postgresql_slot:
+    name: replica_slot
+    db: postgres
+    state: present

@@ -1,0 +1,81 @@
+- name: Установка Nginx, PHP и необходимых модулей
+  apt:
+    name:
+      - php8.1-fpm
+      - php8.1-cli
+      - php8.1-pgsql
+      - php8.1-mbstring
+      - php8.1-intl
+      - php8.1-xml
+      - php8.1-curl
+      - php8.1-zip
+      - php8.1-gd
+      - composer
+      - nginx
+    state: present
+  register: apt_result
+  until: apt_result is success
+  retries: 10
+  delay: 10
+
+- name: Скачать MediaWiki
+  get_url:
+    url: "https://releases.wikimedia.org/mediawiki/{{ mw_version[:4] }}/mediawiki-{{ mw_version }}.tar.gz"
+    dest: "/tmp/mediawiki.tar.gz"
+
+- name: Убеждаемся, что директория MediaWiki существует
+  file:
+    path: "{{ mw_install_dir | dirname }}"
+    state: directory
+    owner: www-data
+    group: www-data
+    mode: '0755'
+
+- name: Распаковать в каталог приложения
+  unarchive:
+    src: "/tmp/mediawiki.tar.gz"
+    dest: "{{ mw_install_dir | dirname }}"
+    remote_src: yes
+    owner: www-data
+    group: www-data
+    creates: "{{ mw_install_dir }}/index.php"
+
+- name: Установка расширения AWS (S3)
+  git:
+    repo: "https://gerrit.wikimedia.org/r/mediawiki/extensions/AWS"
+    dest: "{{ mw_install_dir }}/extensions/AWS"
+    version: "master"
+
+- name: Установка aws-sdk-php через composer
+  composer:
+    command: require
+    arguments: "aws/aws-sdk-php"
+    working_dir: "{{ mw_install_dir }}"
+
+- name: Создать каталог для логов
+  file:
+    path: /var/log/mediawiki
+    state: directory
+    owner: www-data
+    group: www-data
+    mode: '0755'
+
+- name: Сгенерировать LocalSettings.php из шаблона
+  template:
+    src: LocalSettings.php.j2
+    dest: "{{ mw_install_dir }}/LocalSettings.php"
+    owner: www-data
+    group: www-data
+    mode: '0644'
+
+- name: Настройка PHP-FPM пула для MediaWiki
+  template:
+    src: www-mediawiki.conf.j2
+    dest: /etc/php/8.1/fpm/pool.d/mediawiki.conf
+  notify: restart php-fpm
+
+- name: Настройка Nginx виртуального хоста для MediaWiki (на app серверах, для статики)
+  template:
+    src: mediawiki-app-nginx.conf.j2
+    dest: /etc/nginx/sites-available/mediawiki
+  notify: restart nginx

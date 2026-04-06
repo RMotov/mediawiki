@@ -1,0 +1,23 @@
+- name: Установка Nginx
+  apt:
+    name: nginx
+    state: present
+
+- name: Удалить стандартный default site
+  file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+  notify: restart nginx
+
+- name: Настроить upstream и proxy_pass
+  template:
+    src: lb-mediawiki.conf.j2
+    dest: /etc/nginx/sites-available/mediawiki-lb
+  notify: restart nginx
+
+- name: Включить сайт
+  file:
+    src: /etc/nginx/sites-available/mediawiki-lb
+    dest: /etc/nginx/sites-enabled/mediawiki-lb
+    state: link
+  notify: restart nginx
