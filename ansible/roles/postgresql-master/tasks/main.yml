@@ -7,7 +7,7 @@
   register: apt_result
   until: apt_result is success
   retries: 10
-  delay: 10
+  delay: 30
 
 - name: Установка системной библиотеки psycopg2 для работы Ansible с Postgres
   apt:

@@ -15,48 +15,23 @@ $wgScriptPath = "";
 $wgArticlePath = "/wiki/$1";
 $wgUsePathInfo = true;
 
+$wgServer = "http://{{ lb_host }}";
+
 # Загрузка файлов через S3 (Yandex Object Storage)
 wfLoadExtension( 'AWS' );
 
-# Настройки S3-совместимого хранилища (Yandex Object Storage)
+# Настройки S3-совместимого хранилища
 $wgAWSCredentials = [
     'key'    => '{{ s3_access_key }}',
     'secret' => '{{ s3_secret_key }}',
-    # 'token' => false,
 ];
-
-# Регион
 $wgAWSRegion = '{{ s3_region }}';
-
-# Имя бакета
 $wgAWSBucketName = '{{ s3_bucket_name }}';
-
-# Эндпоинт
 $wgAWSBucketDomain = '{{ s3_endpoint }}';
-
-# Уровни хэширования
 $wgAWSRepoHashLevels = 2;
 $wgAWSRepoDeletedHashLevels = 3;
 
-# Включение стандартных расширений
-wfLoadExtension( 'Cite' );
-wfLoadExtension( 'Gadgets' );
-wfLoadExtension( 'ImageMap' );
-wfLoadExtension( 'InputBox' );
-wfLoadExtension( 'Interwiki' );
-wfLoadExtension( 'LocalisationUpdate' );
-wfLoadExtension( 'Nuke' );
-wfLoadExtension( 'ParserFunctions' );
-wfLoadExtension( 'PdfHandler' );
-wfLoadExtension( 'Poem' );
-wfLoadExtension( 'RSS' );
-wfLoadExtension( 'Renameuser' );
-wfLoadExtension( 'SpamBlacklist' );
-wfLoadExtension( 'SyntaxHighlight_GeSHi' );
-wfLoadExtension( 'TitleBlacklist' );
-wfLoadExtension( 'WikiEditor' );
-
-# Кэширование
+# Кэширование (отключаем, если нет Redis/Memcached)
 $wgMainCacheType = CACHE_NONE;
 $wgMessageCacheType = CACHE_NONE;
 $wgParserCacheType = CACHE_NONE;
@@ -74,5 +49,7 @@ $wgGroupPermissions['*']['edit'] = false;
 $wgGroupPermissions['user']['edit'] = true;
 $wgGroupPermissions['user']['upload'] = true;
 
+$wgShowExceptionDetails = true; # Диагностика ошибок
+
 # Завершение
-require_once "$IP/LocalSettings_local.php";
+#require_once "$IP/LocalSettings_local.php";

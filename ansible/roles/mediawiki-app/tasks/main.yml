@@ -36,6 +36,7 @@
     owner: www-data
     group: www-data
     mode: '0755'
+    
 
 - name: Распаковать в каталог приложения
   unarchive:
@@ -51,14 +52,24 @@
   file:
     path: "{{ mw_install_dir }}/extensions/AWS"
     state: absent
+  become: yes
+
+- name: Убеждаемся, что директория extensions существует
+  file:
+    path: "{{ mw_install_dir }}/extensions"
+    state: directory
+    owner: www-data
+    group: www-data
+    mode: '0755'
+  become: yes
 
 - name: Клонируем расширение AWS
   git:
     repo: "https://github.com/edwardspec/mediawiki-aws-s3.git"
     dest: "{{ mw_install_dir }}/extensions/AWS"
-    version: "0.14.0"
+    version: "master"
     depth: 1
-  become_user: www-data
+  become: yes
 
 - name: Создаём composer.local.json для подключения зависимостей расширения
   copy:
@@ -76,15 +87,38 @@
     owner: www-data
     group: www-data
     mode: '0644'
+  become: yes
 
-- name: Устанавливаем зависимости через Composer
+- name: Удаляем старый composer.lock, если он есть (чтобы избежать конфликта прав)
+  file:
+    path: "{{ mw_install_dir }}/composer.lock"
+    state: absent
+  become: yes
+
+- name: Устанавливаем зависимости через Composer от root
   composer:
     command: update
     working_dir: "{{ mw_install_dir }}"
     no_dev: yes
-  become_user: www-data
+    # Не указываем become_user — работаем от root
   environment:
-    COMPOSER_HOME: "{{ mw_install_dir }}/.composer"
+    COMPOSER_HOME: "/tmp/composer_home_{{ ansible_date_time.epoch }}"
+  become: yes
+
+- name: Меняем владельца всех файлов MediaWiki (включая vendor/ и composer.lock) на www-data
+  file:
+    path: "{{ mw_install_dir }}"
+    state: directory
+    owner: www-data
+    group: www-data
+    recurse: yes
+  become: yes
+
+- name: Удаляем временную домашнюю директорию Composer
+  file:
+    path: "/tmp/composer_home_{{ ansible_date_time.epoch }}"
+    state: absent
+  become: yes
 
 - name: Проверяем наличие extension.json у расширения AWS
   stat:
@@ -111,6 +145,16 @@
     owner: www-data
     group: www-data
     mode: '0644'
+
+- name: Запускаем обновление базы данных MediaWiki (создание таблиц)
+  command: php {{ mw_install_dir }}/maintenance/update.php --quick
+  become: yes
+  become_user: www-data
+  environment:
+    HOME: "{{ mw_install_dir }}"
+  register: db_update
+  failed_when: db_update.rc != 0 and 'No tables found' not in db_update.stderr
+  changed_when: "'Completed' in db_update.stdout"
 
 - name: Настройка PHP-FPM пула для MediaWiki
   template:

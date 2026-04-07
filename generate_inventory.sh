@@ -68,6 +68,7 @@ sed -e "s/{{ s3_access_key }}/$S3_ACCESS/g" \
     -e "s/{{ db_host }}/$DB_MASTER_INTERNAL_IP/g" \
     -e "s/{{ db_password }}/$DB_PASS/g" \
     -e "s/{{ replication_password }}/$REPL_PASS/g" \
+    -e "s/{{ LB_EXT }}/$LB_EXT/g" \
     all.yml.template > group_vars/all.yml
 
 echo -e "\033[0;32mInventory и group_vars успешно обновлены.\033[0m"

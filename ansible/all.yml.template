@@ -20,6 +20,7 @@ mw_admin_user: "WikiAdmin"
 mw_admin_password: "AdminPass123"
 mw_admin_email: "wikiadmin@yandex.ru"
 mw_site_name: "Корпоративная Вики"
+mw_lb_host: {{ LB_EXT }}
 
 # S3 (Object Storage)
 s3_access_key: "{{ s3_access_key }}"
