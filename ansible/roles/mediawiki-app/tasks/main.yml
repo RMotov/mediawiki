@@ -47,17 +47,54 @@
     extra_opts: [--strip-components=1] # Удаляем верхний уровень, чтобы содержимое попало прямо в /var/www/mediawiki
     creates: "{{ mw_install_dir }}/index.php"
 
-- name: Установка расширения AWS (S3)
-  git:
-    repo: "https://gerrit.wikimedia.org/r/mediawiki/extensions/AWS"
-    dest: "{{ mw_install_dir }}/extensions/AWS"
-    version: "master"
+- name: Удаляем старую директорию расширения, если есть
+  file:
+    path: "{{ mw_install_dir }}/extensions/AWS"
+    state: absent
 
-- name: Установка aws-sdk-php через composer
+- name: Клонируем расширение AWS
+  git:
+    repo: "https://github.com/edwardspec/mediawiki-aws-s3.git"
+    dest: "{{ mw_install_dir }}/extensions/AWS"
+    version: "0.14.0"
+    depth: 1
+  become_user: www-data
+
+- name: Создаём composer.local.json для подключения зависимостей расширения
+  copy:
+    dest: "{{ mw_install_dir }}/composer.local.json"
+    content: |
+      {
+          "extra": {
+              "merge-plugin": {
+                  "include": [
+                      "extensions/AWS/composer.json"
+                  ]
+              }
+          }
+      }
+    owner: www-data
+    group: www-data
+    mode: '0644'
+
+- name: Устанавливаем зависимости через Composer
   composer:
-    command: require
-    arguments: "aws/aws-sdk-php"
+    command: update
     working_dir: "{{ mw_install_dir }}"
+    no_dev: yes
+  become_user: www-data
+  environment:
+    COMPOSER_HOME: "{{ mw_install_dir }}/.composer"
+
+- name: Проверяем наличие extension.json у расширения AWS
+  stat:
+    path: "{{ mw_install_dir }}/extensions/AWS/extension.json"
+  register: aws_extension_json
+
+- name: Провал, если extension.json не найден
+  fail:
+    msg: "Расширение AWS установлено некорректно: отсутствует {{ mw_install_dir }}/extensions/AWS/extension.json"
+  when: not aws_extension_json.stat.exists
 
 - name: Создать каталог для логов
   file:

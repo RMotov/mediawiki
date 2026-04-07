@@ -17,17 +17,26 @@ $wgUsePathInfo = true;
 
 # Загрузка файлов через S3 (Yandex Object Storage)
 wfLoadExtension( 'AWS' );
+
+# Настройки S3-совместимого хранилища (Yandex Object Storage)
 $wgAWSCredentials = [
-    'key' => '{{ s3_access_key }}',
+    'key'    => '{{ s3_access_key }}',
     'secret' => '{{ s3_secret_key }}',
-    'useInstanceProfile' => false,
+    # 'token' => false,
 ];
+
+# Регион
 $wgAWSRegion = '{{ s3_region }}';
+
+# Имя бакета
 $wgAWSBucketName = '{{ s3_bucket_name }}';
-$wgAWSRepoHashLevels = 3;
+
+# Эндпоинт
+$wgAWSBucketDomain = '{{ s3_endpoint }}';
+
+# Уровни хэширования
+$wgAWSRepoHashLevels = 2;
 $wgAWSRepoDeletedHashLevels = 3;
-$wgAWSBucketTopSubdirectory = '/';
-$wgAWSPlugin->setEndpoint( '{{ s3_endpoint }}' );
 
 # Включение стандартных расширений
 wfLoadExtension( 'Cite' );

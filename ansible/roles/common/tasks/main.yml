@@ -16,6 +16,7 @@
       - rsync
       - unzip
       - git
+      - net-tools
     state: present
 
 - name: Установка таймзоны Europe/Moscow
