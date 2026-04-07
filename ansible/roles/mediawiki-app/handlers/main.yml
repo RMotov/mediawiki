@@ -1,7 +1,7 @@
 ---
 - name: restart php-fpm
   systemd:
-    name: php8.1-fpm
+    name: php8.3-fpm
     state: restarted
 
 - name: restart nginx

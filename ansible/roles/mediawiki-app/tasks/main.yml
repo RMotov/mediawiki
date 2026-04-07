@@ -1,15 +1,21 @@
+- name: Добавляем репозиторий Ondrej PHP
+  apt_repository:
+    repo: 'ppa:ondrej/php'
+    state: present
+    update_cache: yes
+
 - name: Установка Nginx, PHP и необходимых модулей
   apt:
     name:
-      - php8.1-fpm
-      - php8.1-cli
-      - php8.1-pgsql
-      - php8.1-mbstring
-      - php8.1-intl
-      - php8.1-xml
-      - php8.1-curl
-      - php8.1-zip
-      - php8.1-gd
+      - php8.3-fpm
+      - php8.3-cli
+      - php8.3-pgsql
+      - php8.3-mbstring
+      - php8.3-intl
+      - php8.3-xml
+      - php8.3-curl
+      - php8.3-zip
+      - php8.3-gd
       - composer
       - nginx
     state: present
@@ -38,6 +44,7 @@
     remote_src: yes
     owner: www-data
     group: www-data
+    extra_opts: [--strip-components=1] # Удаляем верхний уровень, чтобы содержимое попало прямо в /var/www/mediawiki
     creates: "{{ mw_install_dir }}/index.php"
 
 - name: Установка расширения AWS (S3)
@@ -71,7 +78,7 @@
 - name: Настройка PHP-FPM пула для MediaWiki
   template:
     src: www-mediawiki.conf.j2
-    dest: /etc/php/8.1/fpm/pool.d/mediawiki.conf
+    dest: /etc/php/8.3/fpm/pool.d/mediawiki.conf
   notify: restart php-fpm
 
 - name: Настройка Nginx виртуального хоста для MediaWiki (на app серверах, для статики)
