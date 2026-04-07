@@ -37,7 +37,7 @@
 
 - name: Убеждаемся, что директория MediaWiki существует
   file:
-    path: "{{ mw_install_dir | dirname }}"
+    path: "{{ mw_install_dir }}"
     state: directory
     owner: www-data
     group: www-data
@@ -105,7 +105,6 @@
     command: update
     working_dir: "{{ mw_install_dir }}"
     no_dev: yes
-    # Не указываем become_user — работаем от root
   environment:
     COMPOSER_HOME: "/tmp/composer_home_{{ ansible_date_time.epoch }}"
   become: yes
@@ -143,6 +142,47 @@
     group: www-data
     mode: '0755'
 
+- name: Инициализация и настройка MediaWiki
+  block:
+    - name: Удаляем старый LocalSettings.php (если есть)
+      file:
+        path: "{{ mw_install_dir }}/LocalSettings.php"
+        state: absent
+    
+    - name: Первичная инсталляция базы данных (создание таблиц)
+      command:
+        cmd: >
+          php maintenance/run.php install.php
+          --dbtype "postgres"
+          --dbuser "{{ db_user }}"
+          --dbpass "{{ db_password }}"
+          --dbname "{{ db_name }}"
+          --dbserver "{{ hostvars['db_master']['internal_ip'] }}"
+          --dbschema "public"
+          --pass "{{ mw_admin_password }}"
+          "{{ mw_site_name }}" "{{ mw_admin_user }}"
+        chdir: "{{ mw_install_dir }}"
+      become: yes
+      become_user: www-data
+      run_once: true  # Выполнится только на app1
+      register: install_result
+      failed_when:
+        - install_result.rc != 0
+        - "'already installed' not in install_result.stderr"
+    
+    - name: Сгенерировать финальный LocalSettings.php из шаблона
+      template:
+        src: LocalSettings.php.j2
+        dest: "{{ mw_install_dir }}/LocalSettings.php"
+        owner: www-data
+        group: www-data
+        mode: '0644'
+
+#- name: Удаляем старый LocalSettings.php, если он существует
+#  file:
+#    path: "{{ mw_install_dir }}/LocalSettings.php"
+#    state: absent
+#
 #- name: Сгенерировать LocalSettings.php из шаблона
 #  template:
 #    src: LocalSettings.php.j2
@@ -150,16 +190,13 @@
 #    owner: www-data
 #    group: www-data
 #    mode: '0644'
-
-#- name: Запускаем обновление базы данных MediaWiki (создание таблиц)
-#  command: php {{ mw_install_dir }}/maintenance/update.php --quick
+#
+#- name: Инициализация базы данных (создание таблиц)
+#  command:
+#    cmd: "php maintenance/run.php update.php --quick"
+#    chdir: "{{ mw_install_dir }}"
 #  become: yes
 #  become_user: www-data
-#  environment:
-#    HOME: "{{ mw_install_dir }}"
-#  register: db_update
-#  failed_when: db_update.rc != 0 and 'No tables found' not in db_update.stderr
-#  changed_when: "'Completed' in db_update.stdout"
 
 - name: Настройка PHP-FPM пула для MediaWiki
   template:

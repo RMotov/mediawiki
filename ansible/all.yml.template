@@ -7,14 +7,14 @@ timezone: Europe/Moscow
 # PostgreSQL общие
 postgresql_version: 14
 db_host: {{ db_host }}
-db_name: mediawiki
+db_name: my_wiki
 db_user: wikiuser
 db_password: "{{ db_password }}"
 replication_user: replicator
 replication_password: "{{ replication_password }}"
 
 # MediaWiki
-mw_version: "1.42.1"
+mw_version: "1.43.0"
 mw_install_dir: /var/www/mediawiki
 mw_admin_user: "WikiAdmin"
 mw_admin_password: "AdminPass123"

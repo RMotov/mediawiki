@@ -6,27 +6,68 @@ server {
 
     client_max_body_size 100M;
 
+    # 1. Красивые ссылки /wiki/Main_Page
+    location /wiki/ {
+        rewrite ^/wiki/(.*)$ /index.php?title=$1 last;
+    }
+
+    # 2. Основной вход и корень
     location / {
-        try_files $uri $uri/ @rewrite;
+        try_files $uri $uri/ /index.php?$query_string;
     }
 
-    location @rewrite {
-        rewrite ^/(.*)$ /index.php?title=$1&$args;
-    }
-
+    # 3. Обработка PHP
     location ~ \.php$ {
         include snippets/fastcgi-php.conf;
         fastcgi_pass unix:/run/php/php8.3-fpm-mediawiki.sock;
-        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
     }
 
+    # 4. Статика (объединено с иконкой)
     location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ {
         expires max;
         log_not_found off;
+        access_log off; # Чтобы не забивать логи картинками
     }
 
-    location = /favicon.ico {
-        log_not_found off;
-        access_log off;
+    # Безопасность: запрет доступа к важным папкам
+    location ~ ^/(cache|languages|serialized|tests|maintenance)/ {
+        deny all;
     }
 }
+
+
+{#server {#}
+{#    listen 8080;#}
+{#    server_name _;#}
+{#    root {{ mw_install_dir }};#}
+{#    index index.php;#}
+{##}
+{#    client_max_body_size 100M;#}
+{##}
+{#    location / {#}
+{#        try_files $uri $uri/ @rewrite;#}
+{#    }#}
+{##}
+{#    location @rewrite {#}
+{#        rewrite ^/(.*)$ /index.php?title=$1&$args;#}
+{#    }#}
+{##}
+{#    location ~ \.php$ {#}
+{#        include snippets/fastcgi-php.conf;#}
+{#        fastcgi_pass unix:/run/php/php8.3-fpm-mediawiki.sock;#}
+{#        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;#}
+{#    }#}
+{##}
+{#    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ {#}
+{#        expires max;#}
+{#        log_not_found off;#}
+{#    }#}
+{##}
+{#    location = /favicon.ico {#}
+{#        log_not_found off;#}
+{#        access_log off;#}
+{#    }#}
+{#    location /wiki/ {#}
+{#        rewrite ^/wiki/(.*)$ /index.php?title=$1 last;#}
+{#    }#}
+{#}#}
