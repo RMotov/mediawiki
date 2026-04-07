@@ -29,6 +29,12 @@
     url: "https://releases.wikimedia.org/mediawiki/{{ mw_version[:4] }}/mediawiki-{{ mw_version }}.tar.gz"
     dest: "/tmp/mediawiki.tar.gz"
 
+- name: Удаляем старый MediaWiki, если он распакован неправильно
+  file:
+    path: "{{ mw_install_dir }}"
+    state: absent
+  when: force_reinstall | default(false)
+
 - name: Убеждаемся, что директория MediaWiki существует
   file:
     path: "{{ mw_install_dir | dirname }}"
@@ -36,12 +42,11 @@
     owner: www-data
     group: www-data
     mode: '0755'
-    
 
 - name: Распаковать в каталог приложения
   unarchive:
     src: "/tmp/mediawiki.tar.gz"
-    dest: "{{ mw_install_dir | dirname }}"
+    dest: "{{ mw_install_dir}}"
     remote_src: yes
     owner: www-data
     group: www-data
@@ -105,7 +110,7 @@
     COMPOSER_HOME: "/tmp/composer_home_{{ ansible_date_time.epoch }}"
   become: yes
 
-- name: Меняем владельца всех файлов MediaWiki (включая vendor/ и composer.lock) на www-data
+- name: Меняем владельца всех файлов MediaWiki на www-data
   file:
     path: "{{ mw_install_dir }}"
     state: directory
@@ -138,23 +143,23 @@
     group: www-data
     mode: '0755'
 
-- name: Сгенерировать LocalSettings.php из шаблона
-  template:
-    src: LocalSettings.php.j2
-    dest: "{{ mw_install_dir }}/LocalSettings.php"
-    owner: www-data
-    group: www-data
-    mode: '0644'
+#- name: Сгенерировать LocalSettings.php из шаблона
+#  template:
+#    src: LocalSettings.php.j2
+#    dest: "{{ mw_install_dir }}/LocalSettings.php"
+#    owner: www-data
+#    group: www-data
+#    mode: '0644'
 
-- name: Запускаем обновление базы данных MediaWiki (создание таблиц)
-  command: php {{ mw_install_dir }}/maintenance/update.php --quick
-  become: yes
-  become_user: www-data
-  environment:
-    HOME: "{{ mw_install_dir }}"
-  register: db_update
-  failed_when: db_update.rc != 0 and 'No tables found' not in db_update.stderr
-  changed_when: "'Completed' in db_update.stdout"
+#- name: Запускаем обновление базы данных MediaWiki (создание таблиц)
+#  command: php {{ mw_install_dir }}/maintenance/update.php --quick
+#  become: yes
+#  become_user: www-data
+#  environment:
+#    HOME: "{{ mw_install_dir }}"
+#  register: db_update
+#  failed_when: db_update.rc != 0 and 'No tables found' not in db_update.stderr
+#  changed_when: "'Completed' in db_update.stdout"
 
 - name: Настройка PHP-FPM пула для MediaWiki
   template:
@@ -167,3 +172,23 @@
     src: mediawiki-app-nginx.conf.j2
     dest: /etc/nginx/sites-available/mediawiki
   notify: restart nginx
+
+- name: Отключаем сайт default (удаляем симлинк)
+  file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+  notify: restart nginx
+
+- name: Включаем сайт mediawiki (создаём симлинк)
+  file:
+    src: /etc/nginx/sites-available/mediawiki
+    dest: /etc/nginx/sites-enabled/mediawiki
+    state: link
+  notify: restart nginx
+  
+- name: Перезапускаем Nginx
+  systemd:
+    name: nginx
+    state: restarted
+    daemon_reload: yes
+  become: yes

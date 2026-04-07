@@ -71,7 +71,7 @@
     dest: /etc/nginx/sites-available/zabbix
     content: |
       server {
-          listen 8080;
+          listen 8282;
           server_name _;
           root /usr/share/zabbix;
           index index.php;
