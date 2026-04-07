@@ -16,7 +16,7 @@
   register: apt_result
   until: apt_result is success
   retries: 10
-  delay: 10
+  delay: 30
 
 - name: Скачать MediaWiki
   get_url:
