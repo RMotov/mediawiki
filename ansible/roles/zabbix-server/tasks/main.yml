@@ -40,6 +40,15 @@
   args:
     creates: /var/lib/zabbix/.schema_done
 
+- name: Создать директорию для файла-флага Zabbix
+  file:
+    path: /var/lib/zabbix
+    state: directory
+    owner: zabbix
+    group: zabbix
+    mode: '0755'
+  become: yes
+
 - name: Создать файл-флаг #Чтобы не пытался каждый раз импортировать схему
   file:
     path: /var/lib/zabbix/.schema_done
