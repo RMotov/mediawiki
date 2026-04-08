@@ -29,6 +29,15 @@ server {
         access_log off; # Чтобы не забивать логи картинками
     }
 
+    # Добавляем статус-страницу для Zabbix
+    location /nginx_status {
+        stub_status;
+        allow 127.0.0.1;           # Разрешаем локальному агенту
+        allow {{ hostvars['lb']['internal_ip'] }};           # Разрешаем Zabbix-серверу
+        deny all;                  # Остальным запрещено
+        access_log off;            # Не забиваем логи запросами мониторинга
+    }
+
     # Безопасность: запрет доступа к важным папкам
     location ~ ^/(cache|languages|serialized|tests|maintenance)/ {
         deny all;

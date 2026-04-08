@@ -42,6 +42,7 @@ resource "yandex_storage_bucket" "mediawiki_files" {
   bucket     = "mediawiki-files-${substr(yandex_iam_service_account.mediawiki_sa.id, 0, 8)}"
   acl        = "private"
   folder_id  = var.folder_id
+  force_destroy = true
   depends_on = [yandex_resourcemanager_folder_iam_member.sa_storage_editor]
 }
 
@@ -50,6 +51,7 @@ resource "yandex_storage_bucket" "mediawiki_backups" {
   bucket = "mediawiki-backups-${substr(yandex_iam_service_account.mediawiki_sa.id, 0, 8)}"
   acl    = "private"
   folder_id  = var.folder_id
+  force_destroy = true
   # Настройка жизненного цикла: автоматически удалять бэкапы старше 30 дней
   lifecycle_rule {
     id      = "expire-old-backups"

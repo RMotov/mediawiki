@@ -1,7 +1,44 @@
-- name: Установка Nginx
-  apt:
-    name: nginx
+- name: Добавляем репозиторий Ondrej PHP
+  apt_repository:
+    repo: 'ppa:ondrej/php'
     state: present
+    update_cache: yes
+
+- name: Установка Nginx + php
+  apt:
+    name:
+      - nginx
+      - php8.3-fpm
+      - php8.3-mbstring
+      - php8.3-gd
+      - php8.3-xml
+      - php8.3-bcmath
+      - php8.3-pgsql
+    state: present
+
+- name: Настройка параметров PHP для Zabbix
+  lineinfile:
+    path: "/etc/php/8.3/fpm/php.ini"
+    regexp: "^{{ item.key }} ="
+    line: "{{ item.key }} = {{ item.value }}"
+  loop:
+    - { key: 'post_max_size', value: '16M' }
+    - { key: 'max_execution_time', value: '300' }
+    - { key: 'max_input_time', value: '300' }
+  notify: restart php-fpm
+
+- name: Права на директорию сессий PHP
+  file:
+    path: /var/lib/php/sessions
+    state: directory
+    owner: www-data
+    group: www-data
+    mode: '0777'
+
+- name: Перезапуск PHP
+  service:
+    name: php8.3-fpm
+    state: restarted
 
 - name: Удалить стандартный default site
   file:

@@ -36,8 +36,9 @@
 
 - name: Импорт схемы Zabbix
   shell: |
-    zcat /usr/share/zabbix-sql-scripts/postgresql/server.sql.gz | PGPASSWORD={{ zabbix_db_password }} psql -h {{ hostvars['db_master']['internal_ip'] }} -U zabbix -d zabbix
+    zcat /usr/share/zabbix-sql-scripts/postgresql/server.sql.gz | PGPASSWORD="{{ zabbix_db_password }}" psql -h {{ hostvars['db_master']['internal_ip'] }} -U zabbix -d zabbix
   args:
+    executable: /bin/bash
     creates: /var/lib/zabbix/.schema_done
 
 - name: Создать директорию для файла-флага Zabbix
@@ -101,3 +102,24 @@
   loop:
     - zabbix-server
     - zabbix-agent
+
+- name: Создание директории для веб-конфига
+  file:
+    path: /etc/zabbix/web
+    state: directory
+    owner: www-data
+    group: www-data
+    mode: '0755'
+
+- name: Деплой конфигурации Zabbix Web
+  template:
+    src: zabbix.conf.php.j2
+    dest: /etc/zabbix/web/zabbix.conf.php
+    owner: www-data
+    group: www-data
+    mode: '0644'
+
+- name: Перезапуск PHP
+  service:
+    name: php8.3-fpm
+    state: restarted

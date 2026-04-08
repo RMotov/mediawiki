@@ -18,6 +18,7 @@
       - php8.3-gd
       - composer
       - nginx
+      - curl
     state: present
   register: apt_result
   until: apt_result is success
