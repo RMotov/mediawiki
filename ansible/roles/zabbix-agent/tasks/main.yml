@@ -1,0 +1,33 @@
+- name: Настройка Zabbix Агентов
+  hosts: "all:!zbx_server"  # Применяем ко всем, кроме сервера мониторинга
+  tags: setup_agents
+  become: yes
+  tasks:
+    - name: Установка Zabbix Agent
+      apt:
+        name: zabbix-agent
+        state: present
+        update_cache: yes
+    
+    - name: Настройка zabbix_agentd.conf
+      lineinfile:
+        path: /etc/zabbix/zabbix_agentd.conf
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+      loop:
+        - { regexp: '^Server=', line: "Server={{ hostvars['lb']['internal_ip'] }}" }
+        - { regexp: '^ServerActive=', line: "ServerActive={{ hostvars['lb']['internal_ip'] }}" }
+        - { regexp: '^Hostname=', line: "Hostname={{ inventory_hostname }}" }
+      notify: restart zabbix-agent
+    
+    - name: Старт Zabbix Agent
+      service:
+        name: zabbix-agent
+        state: started
+        enabled: yes
+  
+  handlers:
+    - name: restart zabbix-agent
+      service:
+        name: zabbix-agent
+        state: restarted

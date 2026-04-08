@@ -1,0 +1,102 @@
+---
+- name: Настройка бэкапа ФС Mediawiki
+  hosts: "app1,app2"
+  become: yes
+  tasks:
+  - name: Установка yc cli (для работы с S3)
+    shell: |
+      curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash
+      #source ~/.bashrc
+    become_user: "{{ admin_user }}"
+  
+  - name: Копируем ключ сервисного аккаунта для авторизации yc
+    copy:
+      src: /home/akula/mediawiki/ansible/sa_key.json
+      dest: "/home/{{ admin_user }}/.yc-sa-key.json"
+      owner: "{{ admin_user }}"
+      group: "{{ admin_user }}"
+      mode: '0600'
+  
+  - name: Настройка профиля yc
+    shell: |
+      /home/{{ admin_user }}/yandex-cloud/bin/yc config profile create mediawiki-sa || true
+      /home/{{ admin_user }}/yandex-cloud/bin/yc config set service-account-key /home/{{ admin_user }}/.yc-sa-key.json
+      /home/{{ admin_user }}/yandex-cloud/bin/yc config set cloud-id {{ yandex_cloud_id }}
+      /home/{{ admin_user }}/yandex-cloud/bin/yc config set folder-id {{ yandex_folder_id }}
+      /home/{{ admin_user }}/yandex-cloud/bin/yc config profile activate mediawiki-sa
+    become_user: "{{ admin_user }}"
+  
+  - name: Установка AWS CLI (для работы с S3)
+    apt:
+      name: awscli
+      state: present
+    become: yes
+    
+  - name: Добавляем пользователя в группу www-data для чтения файлов
+    user:
+      name: "{{ admin_user }}"
+      groups: www-data
+      append: yes
+      
+  - name: Создание директории .aws
+    file:
+      path: /home/{{ admin_user }}/.aws
+      state: directory
+      owner: "{{ admin_user }}"
+      group: "{{ admin_user }}"
+      mode: '0700'
+  
+  - name: Настройка скрипта эфемерного ключа для Yandex Object Storage
+    template:
+      src: issue-ephemeral-script.sh.j2
+      dest: /home/{{ admin_user }}/.aws/issue-ephemeral-script.sh
+      owner: "{{ admin_user }}"
+      group: "{{ admin_user }}"
+      mode: '0700'
+  
+  - name: Настройка AWS config
+    template:
+      src: aws_config.j2
+      dest: /home/{{ admin_user }}/.aws/config
+      owner: "{{ admin_user }}"
+      group: "{{ admin_user }}"
+      mode: '0600'
+  
+  - name: Настройка учетных данных AWS
+    template:
+      src: aws_credentials.j2
+      dest: /home/{{ admin_user }}/.aws/credentials
+      owner: "{{ admin_user }}"
+      group: "{{ admin_user }}"
+      mode: '0600'
+      
+  - name: Создание директории для локальных бэкапов ФС
+    file:
+      path: /var/backups/mediawiki_fs
+      state: directory
+      owner: "{{ admin_user }}"
+      group: "{{ admin_user }}"
+      mode: '0755'
+  
+  - name: Копирование скрипта бэкапа ФС
+    template:
+      src: backup_mediawiki_files.sh.j2
+      dest: /usr/local/bin/backup_mediawiki_files.sh
+      owner: "{{ admin_user }}"
+      mode: '0700'
+  
+  - name: Добавление лог-файла для бэкапа ФС
+    file:
+      path: /var/log/mediawiki_fs_backup.log
+      state: touch
+      owner: "{{ admin_user }}"
+      mode: '0644'
+  
+  - name: Cron задача на еженедельный бэкап ФС
+    cron:
+      name: "MediaWiki FS weekly backup"
+      minute: "30"
+      hour: "3"
+      weekday: "0"  # По воскресеньям
+      job: "/usr/local/bin/backup_mediawiki_files.sh >> /var/log/mediawiki_fs_backup.log 2>&1"
+      user: "{{ admin_user }}"

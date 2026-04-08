@@ -1,0 +1,37 @@
+#!/bin/bash
+# Резервное копирование файлов MediaWiki в Yandex Object Storage
+
+# Настройки
+SOURCE_DIR="{{ mw_install_dir }}"
+BACKUP_DIR="/var/backups/mediawiki_fs"
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+BUCKET="{{ s3_backups_bucket_name }}"
+FILE_NAME="mw_fs_${TIMESTAMP}.tar.gz"
+
+# Создаем папку для бэкапов, если нет
+mkdir -p "$BACKUP_DIR"
+
+# Упаковываем файлы
+tar -czf "$BACKUP_DIR/$FILE_NAME" -C "$SOURCE_DIR" .
+
+if [ $? -eq 0 ]; then
+    echo "$(date): FS Archive created successfully"
+
+    # Загружаем в S3 с использованием эфемерного профиля
+    aws s3 cp "$BACKUP_DIR/$FILE_NAME" \
+        "s3://$BUCKET/fs-backups/$FILE_NAME" \
+        --profile ephemeral-profile \
+        --endpoint-url {{ s3_endpoint }}
+
+    if [ $? -eq 0 ]; then
+        echo "$(date): FS Upload to S3 successful"
+        # Удаляем локальную копию сразу или через 7 дней
+        find "$BACKUP_DIR" -name "*.tar.gz" -type f -mtime +7 -delete
+    else
+        echo "$(date): FS Upload to S3 FAILED"
+        exit 1
+    fi
+else
+    echo "$(date): FS Archive creation FAILED"
+    exit 1
+fi
