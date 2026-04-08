@@ -21,7 +21,7 @@ variable "folder_id" {
 variable "default_zone" {
   description = "Зона доступности Yandex Cloud"
   type        = string
-  default     = "ru-central1-a"
+  default     = "ru-central1-e"
 }
 
 variable "public_ssh_key_path" {

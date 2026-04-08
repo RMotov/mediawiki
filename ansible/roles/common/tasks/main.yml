@@ -17,6 +17,7 @@
       - unzip
       - git
       - net-tools
+      - jq
     state: present
 
 - name: Установка таймзоны Europe/Moscow

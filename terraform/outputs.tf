@@ -85,3 +85,7 @@ output "replication_password" {
   value       = var.replication_password
   sensitive   = true
 }
+
+output "mediawiki_sa_id" {
+  value = yandex_iam_service_account.mediawiki_sa.id
+}

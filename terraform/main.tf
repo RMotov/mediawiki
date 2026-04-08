@@ -20,6 +20,12 @@ resource "yandex_iam_service_account" "mediawiki_sa" {
   description = "Сервисный аккаунт для доступа к Object Storage из MediaWiki"
 }
 
+resource "yandex_iam_service_account_iam_member" "signer" {
+  service_account_id = yandex_iam_service_account.mediawiki_sa.id
+  role   = "editor"
+  member = "serviceAccount:${yandex_iam_service_account.mediawiki_sa.id}"
+}
+
 resource "yandex_resourcemanager_folder_iam_member" "sa_storage_editor" {
   folder_id = var.folder_id
   role      = "storage.editor"

@@ -30,5 +30,10 @@ s3_backups_bucket_name: "{{ s3_backups_bucket_name }}"
 s3_endpoint: "https://storage.yandexcloud.net"
 s3_region: "ru-central1"
 
+# Yandex Cloud
+yandex_cloud_id: "b1g6naf55abki23fufqa"
+yandex_folder_id: "b1gs3po2a4aahceaiqlr"
+mediawiki_sa_id : "{{ mediawiki_sa_id }}"
+
 # Zabbix
 zabbix_db_password: "ZabbixPass123"

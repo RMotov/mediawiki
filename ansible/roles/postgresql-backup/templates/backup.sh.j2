@@ -18,9 +18,9 @@ if [ $? -eq 0 ]; then
     echo "$(date): Backup created successfully"
 
     # Загружаем в S3
-    aws s3 --endpoint-url "$S3_ENDPOINT" \
-        cp "$BACKUP_DIR/${DB_NAME}_${TIMESTAMP}.sql.gz" \
-        "s3://$BUCKET/db-dump/${DB_NAME}_${TIMESTAMP}.sql.gz"
+    aws s3 cp "$BACKUP_DIR/${DB_NAME}_${TIMESTAMP}.sql.gz" \
+        "s3://$BUCKET/db-dump/${DB_NAME}_${TIMESTAMP}.sql.gz" \
+        --profile ephemeral-profile
 
     if [ $? -eq 0 ]; then
         echo "$(date): Upload to S3 successful"
@@ -35,6 +35,3 @@ else
     echo "$(date): Backup creation FAILED"
     exit 1
 fi
-
-# Очистка старых объектов в бакете (настроено lifecycle rule, но можно и вручную)
-# aws s3 --endpoint-url "$S3_ENDPOINT" rm "s3://$BUCKET/db-dump/" --recursive --exclude "*" --include "*$(date --date='30 days ago' +%Y%m%d)*"

@@ -1,0 +1,9 @@
+#!/bin/sh
+export YC_PROFILE=mediawiki-sa
+# Получение эфемерного ключа для загрузки в Yandex Object Storage
+sa_id="{{ mediawiki_sa_id }}"
+
+/home/{{ admin_user }}/yandex-cloud/bin/yc iam access-key issue-ephemeral \
+  --subject-id $sa_id \
+  --session-name ephemeral-sa-1 \
+  --jq '{Version: 1, AccessKeyId: .access_key_id, SecretAccessKey: .secret, SessionToken: .session_token, ExpiresAt: .expires_at}'

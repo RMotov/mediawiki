@@ -5,3 +5,5 @@
 /ansible/group_vars/all.yml
 /ansible/inventory.yml
 /.idea/
+/ansible/sa_key.json
+/terraform/.terraform.tfstate.lock.info

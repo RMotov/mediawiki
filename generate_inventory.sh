@@ -33,6 +33,7 @@ S3_BUCKET=$(echo "$OUTPUTS" | jq -r '.s3_bucket_name.value')
 S3_BACKUPS_BUCKET=$(echo "$OUTPUTS" | jq -r '.s3_backups_bucket_name.value')
 DB_PASS=$(echo "$OUTPUTS" | jq -r '.db_password.value')
 REPL_PASS=$(echo "$OUTPUTS" | jq -r '.replication_password.value')
+mediawiki_sa_id=$(echo "$OUTPUTS" | jq -r '.mediawiki_sa_id.value')
 
 cd ../ansible
 
@@ -69,6 +70,11 @@ sed -e "s/{{ s3_access_key }}/$S3_ACCESS/g" \
     -e "s/{{ db_password }}/$DB_PASS/g" \
     -e "s/{{ replication_password }}/$REPL_PASS/g" \
     -e "s/{{ LB_EXT }}/$LB_EXT/g" \
+    -e "s/{{ mediawiki_sa_id }}/$mediawiki_sa_id/g" \
     all.yml.template > group_vars/all.yml
+
+echo -e "\e[34mСоздаем ключ для сервисного аккаунта mediawiki-sa\e[0m"
+# Создаем ключ для сервисного аккаунта
+yc iam key create --service-account-name mediawiki-sa -o sa_key.json
 
 echo -e "\033[0;32mInventory и group_vars успешно обновлены.\033[0m"

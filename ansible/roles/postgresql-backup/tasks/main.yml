@@ -1,33 +1,62 @@
 ---
+- name: Установка yc cli (для работы с S3)
+  shell: |
+    curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash
+    #source ~/.bashrc
+  become_user: "{{ admin_user }}"
+
+- name: Копируем ключ сервисного аккаунта для авторизации yc
+  copy:
+    src: sa_key.json
+    dest: "/home/{{ admin_user }}/.yc-sa-key.json"
+    owner: "{{ admin_user }}"
+    group: "{{ admin_user }}"
+    mode: '0600'
+
+- name: Настройка профиля yc
+  shell: |
+    /home/{{ admin_user }}/yandex-cloud/bin/yc config profile create mediawiki-sa || true
+    /home/{{ admin_user }}/yandex-cloud/bin/yc config set service-account-key /home/{{ admin_user }}/.yc-sa-key.json
+    /home/{{ admin_user }}/yandex-cloud/bin/yc config set cloud-id {{ yandex_cloud_id }}
+    /home/{{ admin_user }}/yandex-cloud/bin/yc config set folder-id {{ yandex_folder_id }}
+  become_user: "{{ admin_user }}"
+
 - name: Установка AWS CLI (для работы с S3)
   pip:
     name: awscli
     state: present
   become: yes
 
-- name: Создание директории .aws для пользователя
+- name: Создание директории .aws
   file:
-    path: /home/{{ ansible_user }}/.aws
+    path: /home/{{ admin_user }}/.aws
     state: directory
-#    owner: "{{ ansible_user }}"
-#    group: "{{ ansible_user }}"
+    owner: "{{ admin_user }}"
+    group: "{{ admin_user }}"
     mode: '0700'
-  become: yes
 
-- name: Настройка AWS CLI для Yandex Object Storage
+- name: Настройка скрипта эфемерного ключа для Yandex Object Storage
+  template:
+    src: issue-ephemeral-script.sh.j2
+    dest: /home/{{ admin_user }}/.aws/issue-ephemeral-script.sh
+    owner: "{{ admin_user }}"
+    group: "{{ admin_user }}"
+    mode: '0700'
+
+- name: Настройка AWS config
   template:
     src: aws_config.j2
-    dest: /home/{{ ansible_user }}/.aws/config
-#    owner: "{{ ansible_user }}"
-#    group: "{{ ansible_user }}"
+    dest: /home/{{ admin_user }}/.aws/config
+    owner: "{{ admin_user }}"
+    group: "{{ admin_user }}"
     mode: '0600'
 
 - name: Настройка учетных данных AWS
   template:
     src: aws_credentials.j2
-    dest: /home/{{ ansible_user }}/.aws/credentials
-#    owner: "{{ ansible_user }}"
-#    group: "{{ ansible_user }}"
+    dest: /home/{{ admin_user }}/.aws/credentials
+    owner: "{{ admin_user }}"
+    group: "{{ admin_user }}"
     mode: '0600'
 
 - name: Создание бэкап скрипта
@@ -42,8 +71,8 @@
   file:
     path: /var/backups/mediawiki
     state: directory
-    owner: postgres
-    group: postgres
+    owner: "{{ admin_user }}"
+    group: "{{ admin_user }}"
     mode: '0750'
 
 - name: Добавляем cron задачу на ежедневный бэкап БД
@@ -52,7 +81,7 @@
     minute: "0"
     hour: "2"
     job: "/usr/local/bin/backup_mediawiki_db.sh >> /var/log/mediawiki_backup.log 2>&1"
-    user: root
+    user: "{{ admin_user }}"
 
 - name: Настройка логирования для бэкапов
   copy:
