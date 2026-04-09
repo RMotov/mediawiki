@@ -5,10 +5,46 @@ $wgUpgradeKey = "{{ lookup('password', '/dev/null length=16 chars=ascii_letters,
 
 # Настройки базы данных
 $wgDBtype = "postgres";
-$wgDBserver = "{{ db_host }}";
+$wgDBserver = "{{ hostvars["lb"]["internal_ip"] }}";
 $wgDBname = "{{ db_name }}";
 $wgDBuser = "{{ db_user }}";
 $wgDBpassword = "{{ db_password }}";
+
+{## Настройка отказоустойчивости (Load Balancer Factory)#}
+{#$wgLBFactoryConf = [#}
+{#    'class' => 'LBFactorySimple',#}
+{#        'template' => [#}
+{#            'dbname'   => $wgDBname,#}
+{#            'user'     => $wgDBuser,#}
+{#            'password' => $wgDBpassword,#}
+{#            'type'     => 'postgres',#}
+{#            'variables' => [#}
+{#                'connect_timeout' => 2#}
+{#            ],#}
+{#            'conns'    => [ 'timeout' => 2 ]#}
+{#        ],#}
+{#        'servers' => [#}
+{#            [#}
+{#                'host' => '{{ hostvars["db_master"]["internal_ip"] }}',#}
+{#                'load' => 100,#}
+{#                'type' => 'postgres',#}
+{#                'user'     => $wgDBuser,#}
+{#                'password' => $wgDBpassword#}
+{#            ],#}
+{#            [#}
+{#                'host' => '{{ hostvars["db_replica"]["internal_ip"] }}',#}
+{#                'load' => 1,#}
+{#                'readOnly' => true,#}
+{#                'type' => 'postgres',#}
+{#                'user'     => $wgDBuser,#}
+{#                'password' => $wgDBpassword#}
+{#            ],#}
+{#    ],#}
+{#    'loadMonitor' => [#}
+{#        'class' => 'Wikimedia\Rdbms\LoadMonitorNull' # Отключаем мониторинг нагрузки (он мешает переключению)#}
+{#    ],#}
+{#    'maxLag' => 100, # Игнорируем лаг до 100 секунд#}
+{#];#}
 
 # Пути
 $wgScriptPath = "";

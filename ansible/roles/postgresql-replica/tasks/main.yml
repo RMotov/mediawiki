@@ -14,6 +14,19 @@
     state: present
     update_cache: yes
 
+- name: Разрешаем PostgreSQL слушать все сетевые интерфейсы
+  lineinfile:
+    path: "/etc/postgresql/{{ postgresql_version }}/main/postgresql.conf"
+    regexp: "^#?listen_addresses ="
+    line: "listen_addresses = '*'"
+  notify: restart postgresql
+
+- name: Разрешаем подключения для MediaWiki в pg_hba.conf
+  lineinfile:
+    path: "/etc/postgresql/{{ postgresql_version }}/main/pg_hba.conf"
+    line: "host {{ db_name }} all 10.10.0.0/24 md5"
+  notify: restart postgresql
+
 - name: Остановка PostgreSQL для подготовки к резервному копированию
   systemd:
     name: postgresql
