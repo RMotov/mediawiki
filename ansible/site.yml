@@ -40,3 +40,15 @@
   become: yes
   roles:
     - zabbix-server
+
+- name: Настройка Zabbix агентов
+  hosts: all
+  become: yes
+  roles:
+    - zabbix-agent
+
+- name: Настройка бэкапа файловой системы MediaWiki
+  hosts: app1,app2
+  become: yes
+  roles:
+    - mediawiki-backup
