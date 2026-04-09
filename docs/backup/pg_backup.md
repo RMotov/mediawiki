@@ -1,4 +1,4 @@
-# Ручное восстановление базы данных MediaWiki из резервной копии (Yandex Object Storage + PostgreSQL)
+# Восстановление БД MediaWiki из резервной копии (Yandex Object Storage + PostgreSQL)
 
 ## Перед началом работы
 
@@ -13,6 +13,8 @@
   ```bash
   pg_dump -U {{ db_user }} -h localhost {{ db_name }} | gzip > /tmp/backup_before_restore_$(date +%Y%m%d_%H%M%S).sql.gz
   ```
+
+## Восстановление
 - Найти нужный дамп в Object Storage
   ```bash
   aws s3 ls s3://{{ s3_backups_bucket_name }}/db-dump/ --profile ephemeral-profile
