@@ -51,7 +51,7 @@ $wgScriptPath = "";
 $wgArticlePath = "/wiki/$1";
 $wgUsePathInfo = true;
 
-$wgServer = "http://{{ mw_lb_host }}";
+$wgServer = "http://{{ hostvars["lb"]["external_ip"] }}";
 
 # Загрузка файлов через S3 (Yandex Object Storage)
 wfLoadExtension( 'AWS' );
